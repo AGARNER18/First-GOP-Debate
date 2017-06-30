@@ -29,6 +29,28 @@ DEBATE$SUBJECT_MATTER_GOLD<-NULL
 # relevant_yn has only yes values so it is not useful 
 DEBATE$RELEVANT_YN<-NULL
 
+# look at the 16 rows where CANDIDATE is null
+DEBATE[is.na(DEBATE$CANDIDATE),c(3,11)]
+# only 16 are missing so the appropriate candidate replaced the missing value
+DEBATE$CANDIDATE[DEBATE$ID %in% c('2929', '5307', '6644', '1023', '3667', '7785', '2641', '3985')]<-'No candidate mentioned'
+DEBATE$CANDIDATE[DEBATE$ID %in% c('37','4076','3012','1653','2206')]<-'Donald Trump'
+DEBATE$CANDIDATE[DEBATE$ID %in% c('7425', '9474','10893')]<-'Scott Walker'
+# verify that there are no loner missing values 
+DEBATE[is.na(DEBATE$CANDIDATE),c(3,11)]
+
+# look at the 34 missing values in subject matter
+DEBATE[is.na(DEBATE$SUBJECT_MATTER),c(3,11)]
+table(as.factor(DEBATE$SUBJECT_MATTER))
+# change the missing to None of the above because they all fall into that category
+DEBATE$SUBJECT_MATTER[is.na(DEBATE$SUBJECT_MATTER)]<-'None of the above'
+# verify that there are no longer missing values
+DEBATE[is.na(DEBATE$SUBJECT_MATTER),c(3,11)]
+
+# remove remaining 2 rows with missing values in retween count and name column
+DEBATE<-DEBATE[complete.cases(DEBATE),]
+# verify there are no missing values left
+apply(is.na(DEBATE),2,sum)
+
 # convert to appropriate data type
 attach(DEBATE)
 DEBATE$CANDIDATE<-as.factor(CANDIDATE)
@@ -40,13 +62,6 @@ DEBATE$SENTIMENT_CONFIDENCE<-as.numeric(SENTIMENT_CONFIDENCE)
 DEBATE$RELEVANT_YN<-as.factor(RELEVANT_YN)
 DEBATE$SUBJECT_MATTER<-as.factor(SUBJECT_MATTER)
 DEBATE$SUBJECT_MATTER_CONFIDENCE<-as.numeric(SUBJECT_MATTER_CONFIDENCE)
-
-# look at the 16 rows where CANDIDATE is null
-DEBATE[is.na(DEBATE$CANDIDATE),c(1,11)]
-DEBATE$CANDIDATE[c(96,152,170,329,410,489,737,1099)]<-'No candidate mentioned'
-DEBATE$CANDIDATE[c(185,299,504,1136)]<-'Donald Trump'
-DEBATE$CANDIDATE[c(135,884,993)]<-'Scott Walker'
-DEBATE$CANDIDATE[400]<-'Rand Paul'
 
 # get only the text
 some_txt = DEBATE$TEXT
@@ -158,14 +173,23 @@ words.rem.sorted[words.rem.sorted$Freq>30,]
 
 #********************************ASSOCIATION RULES*****************************************
 str(DEBATE)
-# find missing values in each variable
-apply(is.na(DEBATE),2,sum)
 
 # look at the distribution
 hist(DEBATE$CANDIDATE_CONFIDENCE)
-# look for missing values
-DEBATE$CANDIDATE_CONFIDENCE<-discretize(as.numeric(CANDIDATE_CONFIDENCE), method="interval")
+# discretize for association analysis
+DEBATE$CANDIDATE_CONFIDENCE<-discretize(as.numeric(DEBATE$CANDIDATE_CONFIDENCE), method="interval")
+# look at the result
+table(DEBATE$CANDIDATE_CONFIDENCE)
 
+# look at the distribution
+hist(DEBATE$RELEVANT_YN_CONFIDENCE)
+DEBATE$RELEVANT_YN_CONFIDENCE<-discretize(as.numeric(DEBATE$RELEVANT_YN_CONFIDENCE), method="interval", categories = 4)
+# look at the result
+table(DEBATE$RELEVANT_YN_CONFIDENCE)
+
+# look at the distribution
+hist(DEBATE$RETWEET_COUNT)
+DEBATE$RETWEET_COUNT<-discretize(as.numeric(DEBATE$RETWEET_COUNT), method="interval")
 
 # find association rules with apriori
 rules <- apriori(DEBATE)
