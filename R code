@@ -15,8 +15,8 @@ apply(is.na(DEBATE),2,sum)
 # remove variables where all or most of the values are missing
 DEBATE$TWEET_LOCATION<-NULL
 DEBATE$TWEET_ID<-NULL
-DEBATE$TWEET_CREATED<-NULL
 DEBATE$USER_TIMEZONE<-NULL
+DEBATE$TWEET_CREATED<-NULL
 DEBATE$TWEET_COORD<-NULL
 DEBATE$SENTIMENT_GOLD<-NULL
 DEBATE$RELEVANT_YN_GOLD<-NULL
@@ -245,3 +245,6 @@ which(redundant)
 # remove redundant rules
 rules.pruned <- rules.sorted[!redundant]
 inspect(rules.pruned)
+
+debate_corpus = Corpus(VectorSource(DEBATE$TEXT))
+
