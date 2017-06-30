@@ -1,10 +1,8 @@
-# Connect to DashDB
 library(ibmdbR)
 mycon <- idaConnect("BLUDB", "", "")
 idaInit(mycon)
 
-# get table from database
-DEBATE <- as.data.frame(ida.data.frame('"DASH5022"."V_DEBATE"')[ ,c('CANDIDATE', 'CANDIDATE_CONFIDENCE', 'CANDIDATE_GOLD', 'ID', 'NAME', 'RELEVANT_YN', 'RELEVANT_YN_CONFIDENCE', 'RELEVANT_YN_GOLD', 'RETWEET_COUNT', 'SENTIMENT', 'SENTIMENT_CONFIDENCE', 'SENTIMENT_GOLD', 'SUBJECT_MATTER', 'SUBJECT_MATTER_CONFIDENCE', 'SUBJECT_MATTER_GOLD', 'TEXT', 'TWEET_COORD', 'TWEET_CREATED', 'TWEET_ID', 'TWEET_LOCATION', 'USER_TIMEZONE')])
+DEBATE <- as.data.frame(ida.data.frame('"DASH103769"."V_DEBATE"')[ ,c('CANDIDATE', 'CANDIDATE_CONFIDENCE', 'CANDIDATE_GOLD', 'ID', 'NAME', 'RELEVANT_YN', 'RELEVANT_YN_CONFIDENCE', 'RELEVANT_YN_GOLD', 'RETWEET_COUNT', 'SENTIMENT', 'SENTIMENT_CONFIDENCE', 'SENTIMENT_GOLD', 'SUBJECT_MATTER', 'SUBJECT_MATTER_CONFIDENCE', 'SUBJECT_MATTER_GOLD', 'TEXT', 'TWEET_COORD', 'TWEET_CREATED', 'TWEET_ID', 'TWEET_LOCATION', 'USER_TIMEZONE')])
 
 # make sure table was loaded correctly
 summary(DEBATE)
@@ -55,11 +53,9 @@ apply(is.na(DEBATE),2,sum)
 attach(DEBATE)
 DEBATE$CANDIDATE<-as.factor(CANDIDATE)
 DEBATE$CANDIDATE_CONFIDENCE<-as.numeric(CANDIDATE_CONFIDENCE)
-DEBATE$RELEVANT_YN<-as.factor(RELEVANT_YN)
 DEBATE$RELEVANT_YN_CONFIDENCE<-as.numeric(RELEVANT_YN_CONFIDENCE)
 DEBATE$SENTIMENT<-as.factor(SENTIMENT)
 DEBATE$SENTIMENT_CONFIDENCE<-as.numeric(SENTIMENT_CONFIDENCE)
-DEBATE$RELEVANT_YN<-as.factor(RELEVANT_YN)
 DEBATE$SUBJECT_MATTER<-as.factor(SUBJECT_MATTER)
 DEBATE$SUBJECT_MATTER_CONFIDENCE<-as.numeric(SUBJECT_MATTER_CONFIDENCE)
 
@@ -101,7 +97,7 @@ some_txt = gsub("hilaryclinton", "clinton", some_txt)
 some_txt = gsub("[ \t]{2,}", "", some_txt)
 some_txt = gsub("^\\s+|\\s+$", "", some_txt)
 
-# define "tolower error handling" function 
+# define "tolower error handling" function 
 try.error = function(x)
 {
   # create missing value
@@ -114,7 +110,7 @@ try.error = function(x)
   # result
   return(y)
 }
-# lower case using try.error with sapply 
+# lower case using try.error with sapply 
 some_txt = sapply(some_txt, try.error)
 
 # remove NAs in some_txt
@@ -179,17 +175,73 @@ hist(DEBATE$CANDIDATE_CONFIDENCE)
 # discretize for association analysis
 DEBATE$CANDIDATE_CONFIDENCE<-discretize(as.numeric(DEBATE$CANDIDATE_CONFIDENCE), method="interval")
 # look at the result
-table(DEBATE$CANDIDATE_CONFIDENCE)
+summary(DEBATE$CANDIDATE_CONFIDENCE)
 
 # look at the distribution
 hist(DEBATE$RELEVANT_YN_CONFIDENCE)
 DEBATE$RELEVANT_YN_CONFIDENCE<-discretize(as.numeric(DEBATE$RELEVANT_YN_CONFIDENCE), method="interval", categories = 4)
 # look at the result
-table(DEBATE$RELEVANT_YN_CONFIDENCE)
+summary(DEBATE$RELEVANT_YN_CONFIDENCE)
 
 # look at the distribution
 hist(DEBATE$RETWEET_COUNT)
-DEBATE$RETWEET_COUNT<-discretize(as.numeric(DEBATE$RETWEET_COUNT), method="interval")
+DEBATE$RETWEET_COUNT<-cut(DEBATE$RETWEET_COUNT, breaks=c(0,1,2,4416),right=FALSE, include.lowest = TRUE)
+summary(DEBATE$RETWEET_COUNT)
+
+# look at the distribution
+hist(DEBATE$SENTIMENT_CONFIDENCE)
+DEBATE$SENTIMENT_CONFIDENCE<-cut(as.numeric(DEBATE$SENTIMENT_CONFIDENCE), breaks=c(0,0.5,1),right=FALSE, include.lowest = TRUE)
+summary(DEBATE$SENTIMENT_CONFIDENCE)
+
+# look at the distribution
+hist(DEBATE$SUBJECT_MATTER_CONFIDENCE)
+DEBATE$SUBJECT_MATTER_CONFIDENCE<-discretize(as.numeric(DEBATE$SUBJECT_MATTER_CONFIDENCE), method="interval", categories = 3)
+summary(DEBATE$SUBJECT_MATTER_CONFIDENCE)
+
+# subset to only include the variables useful for analysis
+DEBATE_FACTOR<-DEBATE[,c(1,6, 7, 9)]
 
 # find association rules with apriori
-rules <- apriori(DEBATE)
+rules <- apriori(DEBATE_FACTOR, parameter = list(supp = 0.1, conf = 0.3, target = "rules"))
+# see number of rules generated
+rules
+# look at the rules
+inspect(rules)
+# sort the rules according to lift
+rules.sorted <- sort(rules, by="lift")
+# look at sorted rules
+inspect(rules.sorted)
+
+# find the redundant rules
+subset.matrix <- is.subset(rules.sorted, rules.sorted)
+subset.matrix[lower.tri(subset.matrix, diag=T)] <- NA
+redundant <- colSums(subset.matrix, na.rm=T) >= 1
+which(redundant)
+
+# remove redundant rules
+rules.pruned <- rules.sorted[!redundant]
+inspect(rules.pruned)
+
+# find association rules with apriori where right hand side is sentiment 
+rules <- apriori(DEBATE_FACTOR, parameter = 
+                   list(supp = 0.1, conf = 0.1, target = "rules"), 
+                 list(rhs=c("SENTIMENT=Positive", "SENTIMENT=Neutral", "SENTIMENT=Negative"),
+                    default="lhs"))
+# see number of rules generated                
+rules
+# look at the rules
+inspect(rules)
+# sort the rules according to lift
+rules.sorted <- sort(rules, by="lift")
+# look at sorted rules
+inspect(rules.sorted)
+
+# find the redundant rules
+subset.matrix <- is.subset(rules.sorted, rules.sorted)
+subset.matrix[lower.tri(subset.matrix, diag=T)] <- NA
+redundant <- colSums(subset.matrix, na.rm=T) >= 1
+which(redundant)
+
+# remove redundant rules
+rules.pruned <- rules.sorted[!redundant]
+inspect(rules.pruned)
