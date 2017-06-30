@@ -10,20 +10,43 @@ DEBATE <- as.data.frame(ida.data.frame('"DASH5022"."V_DEBATE"')[ ,c('CANDIDATE',
 summary(DEBATE)
 dim(DEBATE)
 str(DEBATE)
+# find missing values in each variable
+apply(is.na(DEBATE),2,sum)
 
 #*****************************DATA PREPROCESSING********************************************************
+# remove variables where all or most of the values are missing
+DEBATE$TWEET_LOCATION<-NULL
+DEBATE$TWEET_ID<-NULL
+DEBATE$TWEET_CREATED<-NULL
+DEBATE$USER_TIMEZONE<-NULL
+DEBATE$TWEET_COORD<-NULL
+DEBATE$SENTIMENT_GOLD<-NULL
+DEBATE$RELEVANT_YN_GOLD<-NULL
+DEBATE$CANDIDATE_GOLD<-NULL
+DEBATE$SUBJECT_MATTER_GOLD<-NULL
+
+# remove variables of no use
+# relevant_yn has only yes values so it is not useful 
+DEBATE$RELEVANT_YN<-NULL
 
 # convert to appropriate data type
 attach(DEBATE)
-CANDIDATE<-as.factor(CANDIDATE)
-CANDIDATE_CONFIDENCE<-as.integer(CANDIDATE_CONFIDENCE)
-RELEVANT_YN<-as.factor(RELEVANT_YN)
-RELEVANT_YN_CONFIDENCE<-as.integer(RELEVANT_YN_CONFIDENCE)
-SENTIMENT<-as.factor(SENTIMENT)
-SENTIMENT_CONFIDENCE<-as.integer(SENTIMENT_CONFIDENCE)
-RELEVANT_YN<-as.factor(RELEVANT_YN)
-SUBJECT_MATTER<-as.factor(SUBJECT_MATTER)
-SUBJECT_MATTER_CONFIDENCE<-as.integer(SUBJECT_MATTER_CONFIDENCE)
+DEBATE$CANDIDATE<-as.factor(CANDIDATE)
+DEBATE$CANDIDATE_CONFIDENCE<-as.numeric(CANDIDATE_CONFIDENCE)
+DEBATE$RELEVANT_YN<-as.factor(RELEVANT_YN)
+DEBATE$RELEVANT_YN_CONFIDENCE<-as.numeric(RELEVANT_YN_CONFIDENCE)
+DEBATE$SENTIMENT<-as.factor(SENTIMENT)
+DEBATE$SENTIMENT_CONFIDENCE<-as.numeric(SENTIMENT_CONFIDENCE)
+DEBATE$RELEVANT_YN<-as.factor(RELEVANT_YN)
+DEBATE$SUBJECT_MATTER<-as.factor(SUBJECT_MATTER)
+DEBATE$SUBJECT_MATTER_CONFIDENCE<-as.numeric(SUBJECT_MATTER_CONFIDENCE)
+
+# look at the 16 rows where CANDIDATE is null
+DEBATE[is.na(DEBATE$CANDIDATE),c(1,11)]
+DEBATE$CANDIDATE[c(96,152,170,329,410,489,737,1099)]<-'No candidate mentioned'
+DEBATE$CANDIDATE[c(185,299,504,1136)]<-'Donald Trump'
+DEBATE$CANDIDATE[c(135,884,993)]<-'Scott Walker'
+DEBATE$CANDIDATE[400]<-'Rand Paul'
 
 # get only the text
 some_txt = DEBATE$TEXT
@@ -134,6 +157,15 @@ all_freq_plot
 words.rem.sorted[words.rem.sorted$Freq>30,]
 
 #********************************ASSOCIATION RULES*****************************************
+str(DEBATE)
+# find missing values in each variable
+apply(is.na(DEBATE),2,sum)
+
+# look at the distribution
+hist(DEBATE$CANDIDATE_CONFIDENCE)
+# look for missing values
+DEBATE$CANDIDATE_CONFIDENCE<-discretize(as.numeric(CANDIDATE_CONFIDENCE), method="interval")
+
 
 # find association rules with apriori
-rules <- apriori(sentences.df)
+rules <- apriori(DEBATE)
