@@ -312,7 +312,10 @@ p<-p+ ggtitle("Sentiment and Retweet by Subject Matter")
 p<-p+ labs(x="Subject", y="Number of Retweets")
 p
 
+# remove lesser tweeted about candidates for better readability of plot
 DEBATE2<-DEBATE[! DEBATE$CANDIDATE %in% c("John Kasich", "Chris Christie", "Marco Rubio", "No candidate mentioned"),]
+
+# jitter plot of candidate by retweet count
 g<-ggplot(subset(DEBATE2, DEBATE2$SUBJECT_MATTER !='None of the above'), aes(x=CANDIDATE, y=RETWEET_COUNT))
 g<-g+geom_jitter(alpha=0.8, aes(color=CANDIDATE),position = position_jitter(width = .05), size=1.5)
 g
