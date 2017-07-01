@@ -293,8 +293,13 @@ print(debate.bayes)
 DEBATE2<-DEBATE[,c(1,2,5,6,7,8,9,10)]
 table(predict(debate.bayes, DEBATE2[,-5]), DEBATE2[,5])
 
-#*****************************************************FURTHER EXPLORATION*****************************************
 
-candidate<-DEBATE[DEBATE$CANDIDATE !="No candidate mentioned",]
-sentiment<-aggregate(candidate)
-sentiment <- candidate %>% group_by(sentiment) %>% count(candidate)
+#*****************************************************VISUALIZATION***********************************************
+
+# bar plot of sentiment and retweet count by candidate
+p<-ggplot(data=subset(DEBATE, DEBATE$CANDIDATE != 'No candidate mentioned'), aes(x=CANDIDATE, y=RETWEET_COUNT, fill=SENTIMENT))
+p<- p + geom_bar(stat="identity")
+p<- p + scale_fill_manual(values=c('#cc0000','#0099cc', '#009933'))
+p<-p+ ggtitle("Sentiment and Retweet by Candidate")
+p<-p+ labs(x="Candidates", y="Number of Retweets")
+p
