@@ -205,6 +205,10 @@ DEBATE_FACTOR<-DEBATE[,c(1,6, 7, 9)]
 rules <- apriori(DEBATE_FACTOR, parameter = list(supp = 0.1, conf = 0.3, target = "rules"))
 # see number of rules generated
 rules
+# plot results
+plot(rules, method = "matrix", measure = "lift")
+# bubble chart of the rules
+plot(rules, method = "grouped", control = list(k = 20, col=heat.colors(100), main="First GOP Debate/nSentiment Analysis"))
 # look at the rules
 inspect(rules)
 # sort the rules according to lift
@@ -221,7 +225,8 @@ which(redundant)
 # remove redundant rules
 rules.pruned <- rules.sorted[!redundant]
 inspect(rules.pruned)
-
+# bubble chart of the rules
+plot(rules.pruned, method = "grouped", control = list(k = 20, col=heat.colors(100), main="First GOP Debate/nSentiment Analysis"))
 # find association rules with apriori where right hand side is sentiment 
 rules <- apriori(DEBATE_FACTOR, parameter = 
                    list(supp = 0.1, conf = 0.1, target = "rules"), 
@@ -231,6 +236,10 @@ rules <- apriori(DEBATE_FACTOR, parameter =
 rules
 # look at the rules
 inspect(rules)
+# plot results
+plot(rules, method = "matrix", measure = "lift")
+# bubble chart of the rules
+plot(rules, method = "grouped", control = list(k = 20, col=heat.colors(100), main="First GOP Debate/nSentiment Analysis"))
 # sort the rules according to lift
 rules.sorted <- sort(rules, by="lift")
 # look at sorted rules
@@ -246,5 +255,46 @@ which(redundant)
 rules.pruned <- rules.sorted[!redundant]
 inspect(rules.pruned)
 
-debate_corpus = Corpus(VectorSource(DEBATE$TEXT))
+#********************************************************RPART**********************************************
 
+# build an rpart decision tree to predict the sentiment using all the variables as predictors except text and id
+debate.fit <- rpart(SENTIMENT ~ CANDIDATE 
+             + CANDIDATE_CONFIDENCE 
+             + RELEVANT_YN_CONFIDENCE 
+             + RETWEET_COUNT 
+             + SENTIMENT_CONFIDENCE 
+             + SUBJECT_MATTER
+             + SUBJECT_MATTER_CONFIDENCE
+             , data = DEBATE)
+# look at the results of the decision tree
+debate.fit
+
+# create a simple plot of the decision tree
+plot(debate.fit, )
+text(debate.fit, pretty=0.5)
+
+# create a nicer plot of the decision tree
+rpart.plot(debate.fit, type = 4,extra=104, 
+           main="FIRST GOP DEBATE")
+
+#********************************************************NAVIE BAYES*********************************************
+install.packages("e1071")
+library(e1071)
+debate.bayes <- naiveBayes(SENTIMENT ~ CANDIDATE 
+                    + CANDIDATE_CONFIDENCE 
+                    + RELEVANT_YN_CONFIDENCE 
+                    + RETWEET_COUNT 
+                    + SENTIMENT_CONFIDENCE 
+                    + SUBJECT_MATTER
+                    + SUBJECT_MATTER_CONFIDENCE
+                    , data = DEBATE)
+summary(debate.bayes)
+print(debate.bayes)
+DEBATE2<-DEBATE[,c(1,2,5,6,7,8,9,10)]
+table(predict(debate.bayes, DEBATE2[,-5]), DEBATE2[,5])
+
+#*****************************************************FURTHER EXPLORATION*****************************************
+
+candidate<-DEBATE[DEBATE$CANDIDATE !="No candidate mentioned",]
+sentiment<-aggregate(candidate)
+sentiment <- candidate %>% group_by(sentiment) %>% count(candidate)
