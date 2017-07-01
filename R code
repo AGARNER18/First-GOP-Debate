@@ -303,3 +303,16 @@ p<- p + scale_fill_manual(values=c('#cc0000','#0099cc', '#009933'))
 p<-p+ ggtitle("Sentiment and Retweet by Candidate")
 p<-p+ labs(x="Candidates", y="Number of Retweets")
 p
+
+# bar plot of sentiment and retweet count by subject matter
+p<-ggplot(data=subset(DEBATE, DEBATE$CANDIDATE != 'No candidate mentioned'), aes(x=SUBJECT_MATTER, y=RETWEET_COUNT, fill=SENTIMENT))
+p<- p + geom_bar(stat="identity")
+p<- p + scale_fill_manual(values=c('#cc0000','#0099cc', '#009933'))
+p<-p+ ggtitle("Sentiment and Retweet by Subject Matter")
+p<-p+ labs(x="Subject", y="Number of Retweets")
+p
+
+DEBATE2<-DEBATE[! DEBATE$CANDIDATE %in% c("John Kasich", "Chris Christie", "Marco Rubio", "No candidate mentioned"),]
+g<-ggplot(subset(DEBATE2, DEBATE2$SUBJECT_MATTER !='None of the above'), aes(x=CANDIDATE, y=RETWEET_COUNT))
+g<-g+geom_jitter(alpha=0.8, aes(color=CANDIDATE),position = position_jitter(width = .05), size=1.5)
+g
