@@ -365,8 +365,8 @@ table(pred)
 table(pred, DEBATE$SENTIMENT)
 
 sample.df<-DEBATE[DEBATE$SENTIMENT %in% 'Negative',]
-other<-DEBATE[DEBATE$SENTIMENT %in% c('Positive',"Neutral"),]
-sample<-sample.df[sample(nrow(sample.df), 200), ]
+other<-DEBATE[DEBATE$SENTIMENT %in% c('Positive','Neutral'),]
+sample<-sample.df[sample(nrow(sample.df), 300), ]
 debate.sampled<-rbind(sample, other)
 
 # build an rpart decision tree to predict the sentiment using all the variables as predictors except text and id
@@ -390,7 +390,7 @@ text(debate.fit, pretty=0.5)
 
 # create a nicer plot of the decision tree
 rpart.plot(debate.fit2, type = 4,extra=104, 
-           main="FIRST GOP DEBATE")
+           main="FIRST GOP DEBATE", cex=12)
 
 #********************************************************NAVIE BAYES*********************************************
 install.packages("e1071")
@@ -408,13 +408,40 @@ print(debate.bayes)
 DEBATE2<-DEBATE[,c(1,2,5,6,7,8,9,10)]
 table(predict(debate.bayes, DEBATE2[,-5]), DEBATE2[,5])
 
+sample.df<-DEBATE[DEBATE$SENTIMENT %in% 'Negative',]
+other<-DEBATE[DEBATE$SENTIMENT %in% c('Positive', 'Neutral'),]
+sample<-sample.df[sample(nrow(sample.df), 300), ]
+debate.sampled<-rbind(sample, other)
+debate.bayes <- naiveBayes(SENTIMENT ~ CANDIDATE 
+                           + CANDIDATE_CONFIDENCE 
+                           + EMOTION
+                           + RETWEET_COUNT 
+                           + SENTIMENT_CONFIDENCE 
+                           + SUBJECT_MATTER
+                           + SUBJECT_MATTER_CONFIDENCE
+                           , data = debate.sampled)
+summary(debate.bayes)
+DEBATE2<-debate.sampled[,c(1,2,5,6,7,8,9,10)]
+table(predict(debate.bayes, DEBATE2[,-5]), DEBATE2[,5])
+
+
 #*****************************************************VISUALIZATION***********************************************
 
 # bar plot of sentiment and retweet count by candidate
 p<-ggplot(data=subset(DEBATE, DEBATE$CANDIDATE != 'No candidate mentioned'), aes(x=CANDIDATE, y=RETWEET_COUNT, fill=SENTIMENT))
 p<- p + geom_bar(stat="identity")
 p<- p + scale_fill_manual(values=c('#cc0000','#0099cc', '#009933'))
+p<-p+ theme(axis.text.x = element_text(angle=45, hjust = 1, size=18), axis.title=element_text(size=14,face="bold"))
 p<-p+ ggtitle("Sentiment and Retweet by Candidate")
+p<-p+ labs(x="Candidates", y="Number of Retweets")
+p
+
+# bar plot of sentiment and retweet count by candidate
+p<-ggplot(data=subset(DEBATE, DEBATE$CANDIDATE != 'No candidate mentioned' & DEBATE$EMOTION != 'unknown'), aes(x=CANDIDATE, y=RETWEET_COUNT, fill=EMOTION))
+p<- p + geom_bar(stat="identity")
+p<- p + scale_fill_manual(values=c('#cc0000', '#009933','#9933ff','#ff00ff','#3366cc','#ffff66' ))
+p<-p+ theme(axis.text.x = element_text(angle=45, hjust = 1, size=18), axis.title=element_text(size=14,face="bold"))
+p<-p+ ggtitle("Emotion and Retweet by Candidate")
 p<-p+ labs(x="Candidates", y="Number of Retweets")
 p
 
@@ -422,14 +449,12 @@ p
 p<-ggplot(data=subset(DEBATE, DEBATE$CANDIDATE != 'No candidate mentioned'), aes(x=SUBJECT_MATTER, y=RETWEET_COUNT, fill=SENTIMENT))
 p<- p + geom_bar(stat="identity")
 p<- p + scale_fill_manual(values=c('#cc0000','#0099cc', '#009933'))
+p<-p+ theme(axis.text.x = element_text(angle=45, hjust = 1, size=18), axis.title=element_text(size=14,face="bold"))
 p<-p+ ggtitle("Sentiment and Retweet by Subject Matter")
 p<-p+ labs(x="Subject", y="Number of Retweets")
 p
 
-# remove lesser tweeted about candidates for better readability of plot
-DEBATE2<-DEBATE[! DEBATE$CANDIDATE %in% c("John Kasich", "Chris Christie", "Marco Rubio", "No candidate mentioned"),]
-
 # jitter plot of candidate by retweet count
-g<-ggplot(subset(DEBATE2, DEBATE2$SUBJECT_MATTER !='None of the above'), aes(x=CANDIDATE, y=RETWEET_COUNT))
-g<-g+geom_jitter(alpha=0.8, aes(color=CANDIDATE),position = position_jitter(width = .05), size=1.5)
+g<-ggplot(subset(DEBATE), aes(x=SENTIMENT, y=SENTIMENT_CONFIDENCE))
+g<-g+geom_jitter(alpha=0.8, aes(color=SENTIMENT),position = position_jitter(width = .05), size=1.5)
 g
